@@ -35,9 +35,9 @@ This project implements a Retrieval-Augmented Generation (RAG) pipeline using a 
 1. Ingest PDFs
 To process and index PDFs:
     ```bash
-    python src/ingest_pdfs.py
+    python src\pdfProcessor.py
 
 2. Ask Questions
 Run the query script and enter your question when prompted:
     ```bash
-    python src/query_rag.py
+    python src\rag.py

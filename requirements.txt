@@ -4,5 +4,7 @@ sentence-transformers
 PyMuPDF
 faiss-cpu
 openai
-huggingface_hub
+groq
 python-dotenv
+langchain_experimental
+langchain_openai

@@ -3,16 +3,17 @@ import faiss
 import pickle
 from sentence_transformers import SentenceTransformer
 import numpy as np
-from huggingface_hub import InferenceClient
+from groq import Groq
 from dotenv import load_dotenv
 
-load_dotenv()
-HF_API_KEY = os.getenv("HF_API_KEY")
-if not HF_API_KEY:
-    raise ValueError("API key is missing! Please set HF_API_KEY in your environment.")
+# load_dotenv()
+# API_KEY = os.getenv("GROQ_API_KEY")
+API_KEY = os.environ.get("GROQ_API_KEY") # set as environment variable
+if not API_KEY:
+    raise ValueError("API key is missing! Please set API_KEY in your environment.")
 
 # Initialize Hugging Face client
-client = InferenceClient(api_key=HF_API_KEY)
+client = Groq(api_key=API_KEY)
 
 # Load the vector index
 INDEX_FOLDER = "data/indexes"
@@ -43,25 +44,28 @@ def query_faiss_index(question, top_k=3):
         result = metadata[idx]
         result["distance"] = distance
         results.append(result)
+    
+    # Debug: Verify retrieved results
+    print(f"Retrieved Metadata: {results}")
 
     return results
 
 def generate_answer_with_sources(question, context):
     messages = [
+        {"role": "system",
+         "content": "you are helpful teacher."},
+
         {"role": "user",
          "content": f"Answer the question based on the following context:\n\n{context}\n\nQuestion: {question}"}
     ]
 
-    # Call LLaMA API
-    stream = client.chat.completions.create(
-        model="meta-llama/Llama-3.1-8B-Instruct",
+    chat_completion = client.chat.completions.create(
+        model="llama3-8b-8192",
         messages=messages,
-        max_tokens=500,
-        stream=True
     )
 
     # Aggregate streamed chunks
-    answer = "".join(chunk.choices[0].delta.content for chunk in stream)
+    answer = chat_completion.choices[0].message.content
     return answer
 
 
@@ -71,12 +75,13 @@ if __name__ == "__main__":
     # retrieve context from FAISS
     results = query_faiss_index(question)
     context = " ".join([res["text"] for res in results])
+    print(f"Constructed Context: {context}")
 
     # generate response using Llama
     answer = generate_answer_with_sources(question, context)
 
     print("\nAnswer: ", answer)
-    print("\Sources: ")
+    print("\nSources: ")
     for res in results:
         print(f"  - Source: {res['source']}")
         print(f"    Text: {res['text']}")
