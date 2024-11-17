@@ -5,6 +5,8 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 from groq import Groq
 from dotenv import load_dotenv
+from langchain_community.vectorstores import Chroma
+from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 
 # load_dotenv()
 # API_KEY = os.getenv("GROQ_API_KEY")
@@ -23,6 +25,29 @@ METADATA_FILE = os.path.join(INDEX_FOLDER, "metadata.pkl")
 # Initialize embedding model
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
+embed_model = FastEmbedEmbeddings(model_name="BAAI/bge-base-en-v1.5")
+
+# Initialize Chroma vector store
+chroma_db_path = os.path.join(INDEX_FOLDER, "data/chroma")
+vectorstore = Chroma(persist_directory=chroma_db_path, embedding_function=embed_model)
+
+def query_vectorstore(question, top_k=3):
+    # Search Chroma for the most relevant chunks
+    results = vectorstore.similarity_search_with_score(question, k=top_k)
+    
+    # Extract relevant chunks and metadata
+    formatted_results = []
+    for doc, score in results:
+        formatted_results.append({
+            "text": doc.page_content,
+            "source": doc.metadata.get("source", "unknown"),
+            "score": score
+        })
+    
+    # Debug: Verify retrieved results
+    print(f"Retrieved Results: {formatted_results}")
+
+    return formatted_results
 
 def query_faiss_index(question, top_k=3):
     # Load FAISS index
@@ -73,7 +98,8 @@ if __name__ == "__main__":
     question = input("Enter your question: ")
 
     # retrieve context from FAISS
-    results = query_faiss_index(question)
+    # results = query_faiss_index(question)
+    results = query_vectorstore(question)
     context = " ".join([res["text"] for res in results])
     print(f"Constructed Context: {context}")
 

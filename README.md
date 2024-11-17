@@ -33,9 +33,11 @@ This project implements a Retrieval-Augmented Generation (RAG) pipeline using a 
 ## **Usage**
 
 1. Ingest PDFs
-To process and index PDFs:
+To process and index PDFs either with faiss or chroma:
     ```bash
-    python src\pdfProcessor.py
+    python src\pdfProcessor_faiss.py
+     ```bash
+    python src\pdfProcessor_chroma.py
 
 2. Ask Questions
 Run the query script and enter your question when prompted:

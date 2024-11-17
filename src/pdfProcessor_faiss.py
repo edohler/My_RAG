@@ -11,6 +11,7 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 from langchain.schema import Document
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -26,8 +27,14 @@ METADATA_FILE = os.path.join(INDEX_FOLDER, "metadata.pkl")
 # Initialize embedding model
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"  # Small and fast model
 embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
-text_splitter = SemanticChunker(OpenAIEmbeddings(api_key=OPENAI_API_KEY))
+text_splitterSem = SemanticChunker(OpenAIEmbeddings(api_key=OPENAI_API_KEY))
 embed_model = FastEmbedEmbeddings(model_name="BAAI/bge-base-en-v1.5")
+text_splitterRec = RecursiveCharacterTextSplitter(
+    chunk_size=1000,
+    chunk_overlap=0,
+    length_function=len,
+    is_separator_regex=False
+)
 
 def get_file_hash(file_path):
     hasher = hashlib.md5()
@@ -68,7 +75,8 @@ def process_pdfs_and_create_index():
 
     new_embeddings = []
     new_metadata = []
-        
+    
+    """  
     reader = SimpleDirectoryReader(input_files=new_files)
     documents = reader.load_data()
 
@@ -96,8 +104,8 @@ def process_pdfs_and_create_index():
     for doc in combined_documents:
         print(idx)
         idx = idx + 1
-        # chunks = smart_chunk_text(doc)
-        chunks = text_splitter.create_documents(doc.page_content)
+        # chunks = text_splitterSem.create_documents(doc.page_content)
+        chunks = text_splitterRec.create_documents(doc.page_content)
 
         for chunk in chunks:
             chunk_embedding = embedding_model.encode(chunk.page_content)
@@ -108,7 +116,7 @@ def process_pdfs_and_create_index():
                 "source": os.path.basename(file_path)
             })
         # semantic_chunk_vectorstore = Chroma.from_documents(chunks, embedding=embed_model)
-    """
+
 
     # Update FAISS index
     if new_embeddings:
