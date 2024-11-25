@@ -8,3 +8,4 @@ groq
 python-dotenv
 langchain_experimental
 langchain_openai
+langchain-chroma

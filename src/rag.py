@@ -5,7 +5,7 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 from groq import Groq
 from dotenv import load_dotenv
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 
 # load_dotenv()
@@ -28,7 +28,7 @@ embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
 embed_model = FastEmbedEmbeddings(model_name="BAAI/bge-base-en-v1.5")
 
 # Initialize Chroma vector store
-chroma_db_path = os.path.join(INDEX_FOLDER, "data/chroma")
+chroma_db_path = os.path.join(INDEX_FOLDER, "chroma")
 vectorstore = Chroma(persist_directory=chroma_db_path, embedding_function=embed_model)
 
 def query_vectorstore(question, top_k=3):
@@ -97,7 +97,7 @@ def generate_answer_with_sources(question, context):
 if __name__ == "__main__":
     question = input("Enter your question: ")
 
-    # retrieve context from FAISS
+    # retrieve context from FAISS or Chroma vector store
     # results = query_faiss_index(question)
     results = query_vectorstore(question)
     context = " ".join([res["text"] for res in results])
@@ -110,6 +110,6 @@ if __name__ == "__main__":
     print("\nSources: ")
     for res in results:
         print(f"  - Source: {res['source']}")
-        print(f"    Text: {res['text']}")
+        # print(f"    Text: {res['text']}")
 
 
