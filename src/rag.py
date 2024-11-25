@@ -45,7 +45,7 @@ def query_vectorstore(question, top_k=3):
         })
     
     # Debug: Verify retrieved results
-    print(f"Retrieved Results: {formatted_results}")
+    # print(f"Retrieved Results: {formatted_results}")
 
     return formatted_results
 
@@ -71,45 +71,63 @@ def query_faiss_index(question, top_k=3):
         results.append(result)
     
     # Debug: Verify retrieved results
-    print(f"Retrieved Metadata: {results}")
+    # print(f"Retrieved Metadata: {results}")
 
     return results
 
-def generate_answer_with_sources(question, context):
-    messages = [
-        {"role": "system",
-         "content": "you are helpful teacher."},
-
-        {"role": "user",
-         "content": f"Answer the question based on the following context:\n\n{context}\n\nQuestion: {question}"}
-    ]
+def generate_chat_response(question, conversation_history):
+    """
+    Generate a response based on the user's question and conversation history.
+    """
+    # Add the user's question to the conversation history
+    conversation_history.append({"role": "user", "content": question})
 
     chat_completion = client.chat.completions.create(
         model="llama3-8b-8192",
-        messages=messages,
+        messages=conversation_history,
     )
 
     # Aggregate streamed chunks
-    answer = chat_completion.choices[0].message.content
-    return answer
+    response = chat_completion.choices[0].message.content
+
+    # Add the assistant's response to the conversation history
+    conversation_history.append({"role": "assistant", "content": response})
+    
+    return response
 
 
 if __name__ == "__main__":
-    question = input("Enter your question: ")
+    conversation_history = [
+        {"role": "system",
+         "content": "You are a helpful teacher. Answer questions clearly and thoughtfully."}
+    ]
+    
+    print("Welcome to the RAG-Chat! Type 'exit' to end the conversation.")
 
-    # retrieve context from FAISS or Chroma vector store
-    # results = query_faiss_index(question)
-    results = query_vectorstore(question)
-    context = " ".join([res["text"] for res in results])
-    print(f"Constructed Context: {context}")
+    while True:
+        user_input = input("\nYou: ")
 
-    # generate response using Llama
-    answer = generate_answer_with_sources(question, context)
+        if user_input.lower() in ['exit', 'quit']:
+            print("Goodbye! See you soon my dear!")
+            break
 
-    print("\nAnswer: ", answer)
-    print("\nSources: ")
-    for res in results:
-        print(f"  - Source: {res['source']}")
-        # print(f"    Text: {res['text']}")
+        # retrieve context from FAISS or Chroma vector store
+        # results = query_faiss_index(question)
+        results = query_vectorstore(user_input)
+        context = " ".join([res["text"] for res in results])
+        
+        # Optionally add context into the conversation history for deeper responses
+        if context:
+            conversation_history.append({"role": "system", "content": f"Context: {context}"})
+        
+        # Generate response
+        response = generate_chat_response(user_input, conversation_history)
 
+        # Display the response
+        print("\nAI Chatbox: ", response)
 
+        # Optionally, show sources
+        print("\nSources: ")
+        for res in results:
+            print(f"  - Source: {res['source']}")
+        print("\n")
