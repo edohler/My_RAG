@@ -9,3 +9,4 @@ python-dotenv
 langchain_experimental
 langchain_openai
 langchain-chroma
+rank_bm25
