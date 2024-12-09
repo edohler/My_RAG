@@ -74,20 +74,32 @@ def refine_question_with_llm(question, conversation_history, llm_client):
     last_two_exchanges = conversation_history[-4:] if len(conversation_history) >= 4 else conversation_history
 
     # Prepare the LLM conversation messages
-    messages = [{"role": exchange["role"], "content": exchange["content"]} for exchange in last_two_exchanges]
+    messages = []
 
     # Add the task prompt for refining the question
-    messages.append(
-        {
+    messages.append({
+        "role": "system",
+        "content": (
+            "You are a helpful assistant tasked with refining questions for semantic search. "
+            "Your task is to rewrite the user's question to make it more precise and focused, "
+            "based on the provided conversation context. "
+            "Do not answer the question. Provide only the refined question as your output."
+        ),
+    })
+
+    # Add a clear marker for the conversation context
+    if last_two_exchanges:
+        context_content = "\n".join([f"{exchange['role']}: {exchange['content']}" for exchange in last_two_exchanges])
+        messages.append({
             "role": "system",
-            "content": (
-                "Based on the following conversation context, refine the user's question to be more precise and focused. "
-                "Provide only the refined question as your response."
-            ),
-        }
-    )
-    # Add the user's current question
-    messages.append({"role": "user", "content": question})
+            "content": f"The following is the relevant conversation context:\n{context_content}"
+        })
+
+    # Add the user's question
+    messages.append({"role": "user", "content": f"The following is the question you shall refine:\n{question}"})
+
+    # Debugging: Print the messages to ensure correctness
+    # print("Prepared Messages for LLM:", messages)
 
     # Generate the refined question using the LLM
     chat_completion = llm_client.chat.completions.create(
@@ -95,7 +107,10 @@ def refine_question_with_llm(question, conversation_history, llm_client):
         messages=messages,
     )
     refined_question = chat_completion.choices[0].message.content
+    
+    # Debugging: Print refined question
     print(refined_question.strip())
+    
     return refined_question.strip()
 
 

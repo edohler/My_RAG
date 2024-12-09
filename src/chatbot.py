@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 from retrievers import hybrid_similarity_search
 from retrievers import semantic_search, refine_question_with_llm
+from langdetect import detect
 
 
 class RAGChatApp(tk.Tk):
@@ -85,8 +86,20 @@ class RAGChatApp(tk.Tk):
         :param context: Retrieved context from the hybrid search.
         :return: Generated response as a string.
         """
+        # Detect the language of the question
+        question_language = detect(question)
+
+        # System prompt to instruct the LLM
+        system_prompt = (
+            f"You are an assistant that answers questions based on additional context. "
+            f"Respond in the same language as the user's question, which is {question_language}. "
+            f"Please answer the question and state whether your response is based on the provided context or your own knowledge. "
+            f"Here is the additional context, to help you answering the user question: {context}"
+        )
+
+        # Conversation to send to the LLM
         conversation = [
-            {"role": "system", "content": f"Here is additional context for the question: {context}"},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": question},
         ]
 

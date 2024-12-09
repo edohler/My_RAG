@@ -13,9 +13,9 @@ def main():
     use_bm25 = input("Use BM25-based retrieval? (yes/no): ").strip().lower() == "yes"
 
     if use_bm25:
-        app = RAGChatApp(embed_model, vectorstore, bm25_retriever=bm25_retriever)
+        app = RAGChatApp(embed_model, vectorstore, llm_client, bm25_retriever=bm25_retriever)
     else:
-        app = RAGChatApp(embed_model, vectorstore, llm_client=llm_client)
+        app = RAGChatApp(embed_model, vectorstore, llm_client)
 
     app.mainloop()
 
